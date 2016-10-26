@@ -921,7 +921,7 @@ class CephManager:
             except CommandFailedError:
                 self.log('Failed to get pg_num from pool %s, ignoring' % pool)
 
-    def raw_cluster_cmd(self, *args):
+    def raw_cluster_cmd(self, *args, **kwargs):
         """
         Start ceph on a raw cluster.  Return count
         """
@@ -938,9 +938,17 @@ class CephManager:
             self.cluster,
         ]
         ceph_args.extend(args)
+        logger = log
+        if kwargs.get('silent', False):
+            logger = logging.getLogger('dummy')
+            log.addHandler(logging.NullHandler())
+        if 'silent' in kwargs:
+            del kwargs['silent']
         proc = self.controller.run(
             args=ceph_args,
             stdout=StringIO(),
+            logger=logger,
+            **kwargs
             )
         return proc.stdout.getvalue()
 
@@ -1145,7 +1153,7 @@ class CephManager:
         """
         get replica for pool, pgnum (e.g. (data, 0)->0
         """
-        output = self.raw_cluster_cmd("pg", "dump", '--format=json')
+        output = self.raw_cluster_cmd("pg", "dump", '--format=json', silent=True)
         j = json.loads('\n'.join(output.split('\n')[1:]))
         pg_str = self.get_pgid(pool, pgnum)
         for pg in j['pg_stats']:
@@ -1157,7 +1165,7 @@ class CephManager:
         """
         get primary for pool, pgnum (e.g. (data, 0)->0
         """
-        output = self.raw_cluster_cmd("pg", "dump", '--format=json')
+        output = self.raw_cluster_cmd("pg", "dump", '--format=json', silent=True)
         j = json.loads('\n'.join(output.split('\n')[1:]))
         pg_str = self.get_pgid(pool, pgnum)
         for pg in j['pg_stats']:
@@ -1359,7 +1367,8 @@ class CephManager:
                     str(min_size))
             if erasure_code_use_hacky_overwrites:
                 self.raw_cluster_cmd(
-                    'osd', 'pool', 'set', 'debug_white_box_testing_ec_overwrites',
+                    'osd', 'pool', 'set', pool_name,
+                    'debug_white_box_testing_ec_overwrites',
                     'true')
             self.pools[pool_name] = pg_num
         time.sleep(1)
@@ -1517,7 +1526,7 @@ class CephManager:
         """
         Dump the cluster and get pg stats
         """
-        out = self.raw_cluster_cmd('pg', 'dump', '--format=json')
+        out = self.raw_cluster_cmd('pg', 'dump', '--format=json', silent=True)
         j = json.loads('\n'.join(out.split('\n')[1:]))
         return j['pg_stats']
 

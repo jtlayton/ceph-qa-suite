@@ -117,6 +117,9 @@ def task(ctx, config):
 
     noscrub_toggle_delay: (2.0) duration to delay between toggling noscrub
 
+    disable_ceph_objectstore_tool: (false) disable ceph_objectstore_tool based
+                                   tests
+
     example:
 
     tasks:

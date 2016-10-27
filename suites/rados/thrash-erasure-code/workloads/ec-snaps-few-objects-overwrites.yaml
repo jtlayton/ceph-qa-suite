@@ -3,6 +3,8 @@ overrides:
     conf:
       global:
         enable experimental unrecoverable data corrupting features: '*'
+  thrashosds:
+    disable_ceph_objectstore_tool: true
 tasks:
 - rados:
     clients: [client.0]
